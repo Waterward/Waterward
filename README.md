@@ -2,15 +2,15 @@
 
 **Note**: Please don’t edit the document without conformation from Ayham and the rest of the team
 
-### 🏷️ Name
+## 🏷️ Name
 
 Waterward
 
-### 📢 Slogan
+## 📢 Slogan
 
 Smart Water Management System
 
-### 🎯 Goals
+## 🎯 Goals
 
 - Water tank level indicator
 - Multiple tanks support wirelessly (using RF (Radio Frequency) modules)
@@ -20,7 +20,7 @@ Smart Water Management System
 - Optionally (yet to be decided): Control water flow for specific regions to cut water on based on specific configuration (from application)
 - Optionally (yet to be decided): Control the water flow of the tank itself (such as remotely stop the water flow from specific tank)
 
-### ⚙️ Project Components
+## ⚙️ Project Components
 
 - Tank sensor
     - Ultrasonic sensor (to measure water level)
@@ -40,13 +40,13 @@ Smart Water Management System
         - Overview & Settings for each tank
     - Support form page (Optional)
 
-### 🛠️ Process Flow
+## 🛠️ Process Flow
 
 1. Each tank has a sensor, it checks the water level every X minutes (suggested: 1min, can be configured) and quality every X hour (suggested: 1 hour,  can be configured), then it sends the data through the RF module to the Hub
 2. In the main place such as the house, the Hub is installed that collects the data from each tank’s sensor, then update the DB with the new data
 3. Application connects to the DB server that is on the Hub that is connected on the Router OR external server (in the mean time it will be on external server for the graduation project, later it may change and have subscriptions. This is mainly because in order to make it go through the router a static IP must be presented always and a port must be opened but sadly with every router restart the IP gets changed and the app won’t be able to reconnect until reconfigured, or it we may allow the hub to have an external SIM card for Internet)
 
-### ⭐ Main Features
+## ⭐ Main Features
 
 - Check water level for each tank
 - Check water quality for each tank
@@ -67,7 +67,7 @@ Smart Water Management System
     - Every X minutes to update water level for each tank
     - Every X minutes to update water quality for each tank
 
-### 🌟 Secondary Features
+## 🌟 Secondary Features
 
 - Secure system (application, hardware, wave signals)
 - High Performance
@@ -75,15 +75,15 @@ Smart Water Management System
 - Reliable system, e.g. no inaccurate readings
 - Scalability (allows adding more tanks, more Hubs for each account)
 
-### 👥 Targeted Audience
+## 👥 Targeted Audience
 
 As of now, we are targeting Homes, but the project can work on mostly any kind of liquid and and kind of audience with possibly some extra tweaks.
 
-### 💵 Targeted Budget
+## 💵 Targeted Budget
 
 We plan to make the project as low cost as possible in order to even make our project more challenging with other similar projects however, based on our research there is no such competitor within Jordan that have the features we provide however, globally there are different products and they all vary from features, prices and limitations
 
-### 📅 Targeted Timeline
+## 📅 Targeted Timeline
 
 We plan to finish the project as hardware and software in the first phase (GP1) so that in GP2 we only work on finalizing the project and adding possible suggestions from the supervisor if possible and within the scope
 
@@ -109,7 +109,7 @@ We plan to finish the project as hardware and software in the first phase (GP1) 
     - Fully working connecting between application and hardware
     - Design improvements overall evaluation
 
-### 👥 Team Member Roles
+## 👥 Team Member Roles
 
 The whole team should work together in all stages and should know preferably everything in each stage/component of the project however, each team member should focus more than others on specific parts of their specialization:
 
@@ -141,4 +141,4 @@ The whole team should work together in all stages and should know preferably eve
     - Software Collaboration
         - Application prototype
     
-    ### 🙏 Thank you!
+    ## 🙏 Thank you!
