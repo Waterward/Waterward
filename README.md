@@ -1,6 +1,6 @@
 # ⛔ Project Full Details
 
-**Note**: Please don’t edit the document without conformation from Ayham and the rest of the team
+**Note**: Please don’t edit the document without confirmation from Ayham and the rest of the team
 
 ## 🏷️ Name
 
