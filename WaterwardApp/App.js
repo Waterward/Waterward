@@ -1,22 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text } from 'react-native';
+import axios from 'axios';
 
-export default function App() {
+const App = () => {
+  const [distance, setDistance] = useState(null);
+
+  useEffect(() => {
+    const fetchDistance = async () => {
+      try {
+        const response = await axios.get('http://192.168.0.105:3000/distance');
+        setDistance(response.data.distance);
+      } catch (error) {
+        console.error('Error fetching distance:', error.message);
+      }
+    };
+
+    fetchDistance();
+
+    const intervalId = setInterval(fetchDistance, 5000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>In the name Of God We Start! Allah Akbar !!!</Text>
-      <Text>     come On !!   </Text>
-      
-      <StatusBar style="auto" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 24 }}>
+        Distance: {distance !== null ? `${distance} cm` : 'Loading...'}
+      </Text>
     </View>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default App;
