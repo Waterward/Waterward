@@ -8,8 +8,8 @@ const App = () => {
   useEffect(() => {
     const fetchDistance = async () => {
       try {
-        const response = await axios.get('http://192.168.0.105:3000/distance');
-        setDistance(response.data.distance);
+        const response = await axios.get('http://localhost:3000/distance');
+        setDistance(response.data.distance); // json
       } catch (error) {
         console.error('Error fetching distance:', error.message);
       }
