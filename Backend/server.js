@@ -1,29 +1,57 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const mqtt = require('mqtt');
 
 const app = express();
 const port = 3000;
 
-app.use(bodyParser.urlencoded({ extended: true }));
+// MQTT Broker configuration
+const mqttOptions = {
+    host: '680082c8643c49da9b91d1dd81acffc4.s1.eu.hivemq.cloud',
+    port: 8883,
+    protocol: 'mqtts',
+    username: 'Abd5656',
+    password: 'asdfgHJKL8*'
+};
 
-let latestDistance = null 
+// Create MQTT client
+const mqttClient = mqtt.connect(mqttOptions);
 
-app.get('/', (req, res) => {
-  res.send('Hello from your Node.js server!');
+// Array to store received MQTT data
+let mqttData = [];
+
+// Subscribe to MQTT topic
+mqttClient.on('connect', function () {
+    console.log('MQTT connected');
+    mqttClient.subscribe('my/test/topic', function (err) {
+        if (!err) {
+            console.log('Subscribed to MQTT topic');
+        } else {
+            console.error('Error subscribing to MQTT topic:', err);
+        }
+    });
 });
 
-app.get('/distance', (req, res) => {
-  res.json({ distance: latestDistance });
+// Listen for MQTT messages
+mqttClient.on('message', function (topic, message) {
+    // Push received data to the array
+    mqttData.push(message.toString());
+    console.log('Received MQTT data:', message.toString());
 });
 
-app.post('/data', (req, res) => {
-  const distance = req.body.distance;  
-  console.log('Received distance:', distance);
-  latestDistance = distance
-  // Process the distance data as needed
-  res.sendStatus(200); // Send a response back to the ESP32
+// Setup Express middleware to parse JSON bodies
+app.use(bodyParser.json());
+
+app.get('/',(req,res)=>{
+    console.log("Hello")
+
+})
+// Route to get MQTT data
+app.get('/mqtt-data', (req, res) => {
+    res.json(mqttData);
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+    console.log(`Server listening at http://localhost:${port}`);
 });
+
