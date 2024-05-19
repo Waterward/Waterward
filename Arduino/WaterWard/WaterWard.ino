@@ -15,15 +15,29 @@
 
 #include "OneWire.h"
 #include "DallasTemperature.h"
+#include "GravityTDS.h"
+
+#include <WiFi.h>  
+#include <PubSubClient.h>
+#include <WiFiClientSecure.h>
+
+#include "SECRET_VARS.h"
 
 // -------------
 // PINS
 // -------------
 #define ONE_WIRE_BUS 4
-#define PIN_TURBIDITY_SENSOR 26
-#define PIN_SWITCH_LCD 27 // see https://forum.arduino.cc/t/esp32-pins-that-support-pullup/1173356/4
+#define PIN_TURBIDITY_SENSOR 35
+#define PIN_SWITCH_LCD 33 // see https://forum.arduino.cc/t/esp32-pins-that-support-pullup/1173356/4
 #define PIN_US_TRIGGER 12
 #define PIN_US_ECHO 14
+#define PIN_TDS 27
+#define PIN_WATERFLOW 25
+#define PIN_PH 15
+#define PIN_PUMP_RELAY 5
+#define PIN_VALVE_RELAY 17
+#define PIN_SWITCH_PUMP_RELAY 13
+#define PIN_SWITCH_VALVE_RELAY 2
 
 // -------------
 // Registeration
@@ -36,6 +50,8 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 OneWire oneWire(ONE_WIRE_BUS);
 // Pass the oneWire reference to DallasTemperature library:
 DallasTemperature sensors(&oneWire);
+// tds
+GravityTDS gravityTds; // https://mikroelectron.com/Product/Analog-TDS-Total-Dissolved-Solids-Sensor-Meter-for-domestic-water-hydroponic-and-other-water-quality-testing/
 
 // -------------
 // Intervals
@@ -51,6 +67,23 @@ unsigned long intervalButtonCheck = 50;      // Interval for task2 (in milliseco
 // -------------
 int lcdCounter = 0;
 
+// waterflow
+int waterflowPulses = 0;
+float factorConversion = 7.5;  //to convert from frequency to flow rate 
+float waterVolume = 0; 
+float waterVolumeAvg = 0; 
+int waterflowTime;
+int waterflowDeltaTime;
+// if (lcdCounter == NULL)
+//   lcdCounter = 0;
+
+// PH
+float calibration_value = 21.34;
+
+// wifi & mqtt
+WiFiClientSecure espClient;  
+PubSubClient client(espClient);
+
 // -------------
 // Code
 // -------------
@@ -59,17 +92,43 @@ void setup() {
 
   // pinMode(PIN_SWITCH_LCD, INPUT_PULLUP);  // Set pin X as input with internal pull-up resistor
   pinMode(PIN_SWITCH_LCD, INPUT_PULLUP);  // Set pin X as input with internal pull-up resistor
+  pinMode(PIN_PH, INPUT); // ph
+  pinMode(PIN_PUMP_RELAY, OUTPUT); // relay
+  pinMode(PIN_VALVE_RELAY, OUTPUT); // relay
+  pinMode(PIN_SWITCH_PUMP_RELAY, INPUT_PULLUP); // relay
+  pinMode(PIN_SWITCH_VALVE_RELAY, INPUT_PULLUP); // relay
 
   lcd.init();
-  lcd.begin(16, 2);
+  // lcd.begin(16, 2);
   lcd.backlight(); // Turn on the backlight
   // lcd.print("Water Level:");
   
   // Start up the library:
   sensors.begin();
+
+  // TDS -- Conductivity
+  pinMode(PIN_TDS, INPUT);
+  gravityTds.setPin(PIN_TDS);
+  gravityTds.setAref(5.0);  //reference voltage on ADC, default 5.0V on Arduino UNO
+  gravityTds.setAdcRange(1024);  //1024 for 10bit ADC;4096 for 12bit ADC
+  gravityTds.begin();  //initialization
+
+  // Waterflow
+  pinMode(PIN_WATERFLOW, INPUT);  
+  attachInterrupt(digitalPinToInterrupt(PIN_WATERFLOW), incrementWaterflowCount, RISING); //(Interrupt 0(Pin2),function,rising edge) 
+  waterflowTime = millis();
+
+  // wifi
+  wifi_setup();
+
+  // mqtt
+  espClient.setCACert(MQTT_CERT);
+  client.setServer(MQTT_SERVER, MQTT_PORT);
+  client.setCallback(mqtt_callback);
 }
 
 void loop() {
+    // Serial.println(String(digitalPinToInterrupt(PIN_WATERFLOW)));
 
   // button check
   if (checkElapsedTime(lastButtonCheck, intervalButtonCheck)) {
@@ -80,11 +139,19 @@ void loop() {
       lcdCounter += 1;
       switchLCD(); // force update
     }
+    if (digitalRead(PIN_SWITCH_PUMP_RELAY) == LOW) {
+      digitalWrite(PIN_PUMP_RELAY, !digitalRead(PIN_PUMP_RELAY));
+      Serial.println("1: " + String(digitalRead(PIN_PUMP_RELAY)));
+    }
+    if (digitalRead(PIN_SWITCH_VALVE_RELAY) == LOW) {
+      digitalWrite(PIN_VALVE_RELAY, !digitalRead(PIN_VALVE_RELAY));
+      Serial.println("2: " + String(digitalRead(PIN_VALVE_RELAY)));
+    }
   }
 
   // sensors check
   if (checkElapsedTime(lastSensorsCheck, intervalSensorsCheck)) {
-    // readTemprature();
+    // readTemperature();
     // Serial.println("Sensors checked");
 
     // last
@@ -96,7 +163,7 @@ void loop() {
 }
 
 // Temperature Sensor
-float readTemprature() {
+float readTemperature() {
 
   // Send the command for all devices on the bus to perform a temperature conversion:
   sensors.requestTemperatures();
@@ -148,6 +215,73 @@ String readTurbidity() {
   return String(val) + state;
 }
 
+float readConductivity() {
+    // float temperature = readTemperature();  //add your temperature sensor and read it
+    float temperature = 25.0;  //add your temperature sensor and read it
+    gravityTds.setTemperature(temperature);  // set the temperature and execute temperature compensation
+    gravityTds.update();  //sample and calculate
+    float tdsValue = gravityTds.getTdsValue();  // then get the value
+    // Serial.print(tdsValue);
+    // Serial.println("ppm");
+    // delay(1000);
+    // return analogRead(PIN_TDS);
+    return tdsValue;
+    // return calcTDS();
+
+}
+
+float* readWaterflow() { 
+  static float returnArray[2];
+
+  float frequency = getWaterflowFrequency() ;  //we obtain the frequency of the pulses in Hz 
+  // Serial.print();
+  float flow_L_m = frequency / factorConversion ; //calculate the flow in L/m 
+  waterflowDeltaTime = millis() - waterflowTime ;  //calculate the time variation 
+  waterflowTime = millis() ; 
+  // total water flow
+  float diff = ( flow_L_m / 60 ) * ( waterflowDeltaTime / 1000 );
+  waterVolume = waterVolume + diff ;  // volume(L)=flow(L/s)*time(s)
+  // average water flow
+  waterVolumeAvg = diff ;  // volume(L)=flow(L/s)*time(s)
+  Serial.println(waterVolume);
+  Serial.println(waterVolumeAvg);
+  returnArray[0] = waterVolume;
+  returnArray[1] = waterVolumeAvg;
+  return returnArray;
+}
+
+unsigned long timeSinceLastPhSample = 0;
+unsigned long timeCheckLastPhSample = 30;
+unsigned long int avgval; 
+int buffer_arr[10];
+float readPh() {
+
+  // sample
+  for (int i = 0; i < 10 /*&& checkElapsedTime(timeSinceLastPhSample, timeCheckLastPhSample)*/; i++) {
+    buffer_arr[i] = analogRead(PIN_PH);
+    // checkElapsedTime(timeSinceLastPhSample, timeCheckLastPhSample);
+    delay(30);
+  }
+
+  // sort
+  float temp;
+  for (int i = 0; i < 9; i++) {
+    for (int j = i + 1; j < 10; j++) {
+      if (buffer_arr[i] > buffer_arr[j]) {
+        temp = buffer_arr[i];
+        buffer_arr[i] = buffer_arr[j];
+        buffer_arr[j] = temp;
+      }
+    }
+  }
+  avgval = 0;
+  for (int i = 2; i < 8; i++)
+    avgval += buffer_arr[i];
+  float volt = (float)avgval * 5.0 / 1024 / 6;
+  float ph_act = -5.70 * volt + calibration_value;
+  return ph_act;
+}
+
 // -------------
 // UTILITIES
 // -------------
@@ -178,6 +312,16 @@ void levelLCD(int value) {
 
 void conductivityLCD(int value) {
   lcdWrite(0, 0, true, "Conductivity:      ");
+  lcdWrite(0, 1, true, String(value) + " ppm              "); // " \xC2\xB0" + 
+}
+
+void waterflowLCD(float totalValue, float avgValue) {
+  lcdWrite(0, 0, true, "Waterflow:      ");
+  lcdWrite(0, 1, true, "T " + String(totalValue) + " L, A " + String(avgValue) + "              "); // " \xC2\xB0" + 
+}
+
+void PhLCD(float value) {
+  lcdWrite(0, 0, true, "pH Value:      ");
   lcdWrite(0, 1, true, String(value) + "              "); // " \xC2\xB0" + 
 }
 
@@ -188,13 +332,24 @@ void switchLCD() {
       levelLCD(readLevel());
       break;
     case 1: // temp
-      tempLCD(readTemprature());
+      tempLCD(readTemperature());
       break;
     case 2: // turbidity
       turbidityLCD(readTurbidity());
       break;
     case 3: // conductivity
-      conductivityLCD(0);
+      conductivityLCD(readConductivity());
+      break;
+    case 4: { // waterflow
+      float* theArray = readWaterflow(); 
+      float value[2] = { *theArray, *(theArray + 1) };
+      waterflowLCD(value[0], value[1]);
+      // Serial.println("waterflow..");
+      // waterflowLCD(readConductivity());
+      break;
+    }
+    case 5: // pH
+      PhLCD(readPh());
       break;
     default: // reset
       lcdCounter = 0;
@@ -213,4 +368,80 @@ bool checkElapsedTime(unsigned long &lastCheck, unsigned long interval) {
     return true;
   }
   return false;
+}
+
+void incrementWaterflowCount() {
+  waterflowPulses++ ;   //increment the pulse variable 
+} 
+
+unsigned long timeSinceLastWaterflowCheck = 0;
+int getWaterflowFrequency() { 
+  int frequency; 
+  Serial.println("pulses before: " + String(waterflowPulses));
+  waterflowPulses = 0;    // reset
+  // delay(1000);
+  // interrupts();     // We enable the interruptions 
+  delay(1000); 
+  // if (checkElapsedTime(timeSinceLastWaterflowCheck, 1000)) {}   //sample for 1 second 
+  // noInterrupts();  // We disable the interruptions 
+  Serial.println("pulses after: " + String(waterflowPulses));
+  frequency = waterflowPulses;  //Hz(pulses per second) 
+  return frequency;
+}
+
+// -------------------- FUNCTIONS
+
+void wifi_setup() {
+  delay(10);
+  // We start by connecting to a WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(WIFI_SSID);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  randomSeed(micros());
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+void mqtt_reconnect() {
+  // Loop until we’re reconnected
+  while (!client.connected()) {
+    Serial.print("Attempting MQTT connection… ");
+    String clientId = "ESP32Client";
+    // Attempt to connect
+    if (client.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASS)) {
+      Serial.println("connected!");
+      // Once connected, publish an announcement…
+      client.publish(MQTT_PUB_TOPIC, "Hello, I am Connected");
+      // … and resubscribe
+      client.subscribe(MQTT_SUB_TOPIC);
+    } else {
+      Serial.print("failed, rc = ");
+      Serial.print(client.state());
+      Serial.println("try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(3000);
+    }
+  }
 }
