@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, Button,StyleSheet } from 'react-native';
 import * as Paho from 'paho-mqtt';
 
-const Turbidity = ({ visible, onClose }) => {
-  const [Turbiditylevel, setTurbidityLevel] = useState('Loading...');
+const Temperature = ({ visible, onClose }) => {
+  const [TempLevel ,setTempLevel] = useState('Loading...');
   const [client, setClient] = useState(null);
 
   useEffect(() => {
@@ -15,8 +15,8 @@ const Turbidity = ({ visible, onClose }) => {
 
     mqttClient.onMessageArrived = (message) => {
       // Parse the message payload as needed (assuming it's a string)
-      const receivedTurbidityLevel = message.payloadString;
-      setTurbidityLevel(receivedTurbidityLevel);
+      const receivedTempLevel = message.payloadString;
+      setTempLevel(receivedTempLevel);
     };
 
     mqttClient.connect({
@@ -26,9 +26,9 @@ const Turbidity = ({ visible, onClose }) => {
       onSuccess: () => {
         console.log('Connected to MQTT broker');
         setClient(mqttClient);
-        mqttClient.subscribe('waterward/ayham/hub/turbidity', {
+        mqttClient.subscribe('waterward/ayham/hub/temperature', {
           onSuccess: () => {
-            console.log('Subscribed to water/turbidity topic');
+            console.log('Subscribed to water/conductivity topic');
           },
           onFailure: (error) => {
             console.error('Subscription failed: ', error.errorMessage);
@@ -49,7 +49,7 @@ const Turbidity = ({ visible, onClose }) => {
 
   return (
       <View style={styles.container}>
-        <Text style={styles.text}>Turbidity: {Turbiditylevel}</Text>
+        <Text style={styles.text}>Temperature: {TempLevel}</Text>
       </View>
   );
 };
@@ -66,4 +66,4 @@ const styles = StyleSheet.create({
 
 
 })
-export default Turbidity;
+export default Temperature;
