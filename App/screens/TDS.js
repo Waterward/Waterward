@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, View, Text, Button,StyleSheet } from 'react-native';
+import {Image, Modal, View, Text, Button,StyleSheet } from 'react-native';
 import * as Paho from 'paho-mqtt';
 
 const TDS = ({ visible, onClose }) => {
@@ -7,7 +7,7 @@ const TDS = ({ visible, onClose }) => {
   const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const mqttClient = new Paho.Client('b71bf33e09e94d209920b1d43f2de381.s1.eu.hivemq.cloud', 8884, 'client-id');
+    const mqttClient = new Paho.Client(process.env.MQTT_BROKER, process.env.PORT, 'client-id');
 
     mqttClient.onConnectionLost = (responseObject) => {
       console.error('Connection lost: ' + responseObject.errorMessage);
@@ -21,8 +21,8 @@ const TDS = ({ visible, onClose }) => {
 
     mqttClient.connect({
       useSSL: true,
-      userName: 'ayhamalali',
-      password: 'WaterWard2024!',
+      userName: process.env.MQTT_USER,
+      password: process.env.MQTT_PASSWORD,
       onSuccess: () => {
         console.log('Connected to MQTT broker');
         setClient(mqttClient);
@@ -46,10 +46,30 @@ const TDS = ({ visible, onClose }) => {
       }
     };
   }, []);
+  
+  const tdsRanges = [
+    { range: '1 - 300', quality: 'Excellent' },
+    { range: '300 - 600', quality: 'Good' },
+    { range: '600 - 900', quality: 'Fair' },
+    { range: '900 - 1200', quality: 'Poor' },
+    { range: '1200 - 10000', quality: 'Unacceptable' },
+  ];
 
   return (
       <View style={styles.container}>
         <Text style={styles.text}>TDS: {TDSlevel}</Text>
+        
+      <View style={styles.tableContainer}>
+        <Text style={styles.tableHeader}>TDS Level Guide</Text>
+        {tdsRanges.map((item, index) => (
+          <View key={index} style={styles.tableRow}>
+            <Text style={styles.tableCell}>{item.range}</Text>
+            <Text style={styles.tableCell}>{item.quality}</Text>
+          </View>
+        ))}
+      </View>
+      
+      
       </View>
   );
 };
@@ -62,7 +82,41 @@ const styles = StyleSheet.create({
     fontSize:20,
     fontStyle:"italic",
     fontWeight:"bold"
-  }
+  },
+  image:{
+    width:50,
+    height:50,
+    resizeMode:'contain',
+  },
+   tableContainer: {
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  tableHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000',
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 16,
+    textAlign: 'center',
+    paddingVertical: 5,
+    borderRightWidth: 1,
+    borderRightColor: '#000',
+  },
+  lastCell: {
+    borderRightWidth: 0,
+  },
 
 
 })

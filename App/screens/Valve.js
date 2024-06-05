@@ -6,7 +6,7 @@ const Valve = () => {
   const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const mqttClient = new Paho.Client('b71bf33e09e94d209920b1d43f2de381.s1.eu.hivemq.cloud', 8884, 'client-id');
+    const mqttClient = new Paho.Client(process.env.MQTT_BROKER, process.env.PORT, 'client-id');
 
     mqttClient.onConnectionLost = (responseObject) => {
       console.error('Connection lost: ' + responseObject.errorMessage);
@@ -14,8 +14,8 @@ const Valve = () => {
 
     mqttClient.connect({
       useSSL: true,
-      userName: 'ayhamalali',
-      password: 'WaterWard2024!',
+      userName: process.env.MQTT_USER,
+      password: process.env.MQTT_PASSWORD,
       onSuccess: () => {
         console.log('Connected to MQTT broker');
         setClient(mqttClient);
@@ -50,32 +50,29 @@ const Valve = () => {
       console.error('MQTT client is not connected.');
     }
   };
-
-  return (
+return (
     <View style={styles.container}>
       <Text style={styles.title}>Motor Control</Text>
       <Button style={styles.button}title="Turn On" onPress={() => sendCommand(0)} />
-      <Button style={styles.button} title="Turn Off" onPress={() => sendCommand(1)} />
+      <View style={styles.container}></View>
+      <Button color = "red" style={styles.button} title="Turn Off" onPress={() => sendCommand(1)} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 10,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom:10,
   },
   button:{
-    padding:30,
-    margin:20,
+    margin:10,
   },
 });
-
 export default Valve;

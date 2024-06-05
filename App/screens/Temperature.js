@@ -7,7 +7,7 @@ const Temperature = ({ visible, onClose }) => {
   const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const mqttClient = new Paho.Client('b71bf33e09e94d209920b1d43f2de381.s1.eu.hivemq.cloud', 8884, 'client-id');
+    const mqttClient = new Paho.Client(process.env.MQTT_BROKER, process.env.PORT, 'client-id');
 
     mqttClient.onConnectionLost = (responseObject) => {
       console.error('Connection lost: ' + responseObject.errorMessage);
@@ -21,8 +21,8 @@ const Temperature = ({ visible, onClose }) => {
 
     mqttClient.connect({
       useSSL: true,
-      userName: 'ayhamalali',
-      password: 'WaterWard2024!',
+      userName: process.env.MQTT_USER,
+      password: process.env.MQTT_PASSWORD,
       onSuccess: () => {
         console.log('Connected to MQTT broker');
         setClient(mqttClient);
