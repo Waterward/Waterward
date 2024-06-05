@@ -7,7 +7,7 @@ const PH = ({ visible, onClose }) => {
   const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const mqttClient = new Paho.Client(process.env.MQTT_BROKER,process.env.PORT,'esp32')
+    const mqttClient = new Paho.Client(process.env.MQTT_BROKER,8884,'client')
 
     mqttClient.onConnectionLost = (responseObject) => {
       console.error('Connection lost: ' + responseObject.errorMessage);
@@ -21,8 +21,8 @@ const PH = ({ visible, onClose }) => {
 
     mqttClient.connect({
       useSSL: true,
-      userName: process.env.MQTT_USER,
-      password: process.env.MQTT_PASSWORD,
+      userName:process.env.MQTT_USER,
+      password:process.env.MQTT_PASSWORD,
       onSuccess: () => {
         console.log('Connected to MQTT broker');
         setClient(mqttClient);

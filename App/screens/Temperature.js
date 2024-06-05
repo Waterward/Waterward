@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, View, Text, Button,StyleSheet } from 'react-native';
 import * as Paho from 'paho-mqtt';
+import{ER,MQTT_PASSWORD} from '@env';
 
 const Temperature = ({ visible, onClose }) => {
   const [TempLevel ,setTempLevel] = useState('Loading...');
   const [client, setClient] = useState(null);
 
   useEffect(() => {
-    const mqttClient = new Paho.Client(process.env.MQTT_BROKER, process.env.PORT, 'client-id');
+    const mqttClient = new Paho.Client(process.env.MQTT_BROKER,8884,'client-id');
 
     mqttClient.onConnectionLost = (responseObject) => {
       console.error('Connection lost: ' + responseObject.errorMessage);
@@ -21,8 +22,8 @@ const Temperature = ({ visible, onClose }) => {
 
     mqttClient.connect({
       useSSL: true,
-      userName: process.env.MQTT_USER,
-      password: process.env.MQTT_PASSWORD,
+      userName:process.env.MQTT_USER,
+      password:process.env.MQTT_PASSWORD,
       onSuccess: () => {
         console.log('Connected to MQTT broker');
         setClient(mqttClient);

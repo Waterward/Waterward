@@ -1,12 +1,14 @@
 import * as Paho from 'paho-mqtt';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { useEffect, useState } from 'react';
+
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   useEffect(() => {
-    const client = new Paho.Client(process.env.MQTT_BROKER, process.env.PORT, 'esp32');
-    client.onConnectionLost = (responseObject) => {
+    const client = new Paho.Client(process.env.MQTT_BROKER,8884,'esp32')
+    
+     client.onConnectionLost = (responseObject) => {
       if (responseObject.errorCode !== 0) {
         setConnectionStatus(`Connection lost: ${responseObject.errorMessage}`);
       }
