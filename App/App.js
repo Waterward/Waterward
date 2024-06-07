@@ -20,7 +20,7 @@ export default function App() {
             } else if (route.name === 'MQTT') {
               iconName = focused ? 'wifi' : 'wifi-outline';
             } else if (route.name === 'Config') {
-              iconName = focused ? 'settings' : 'settings-outline';
+              iconName = focused ? 'Data' : 'Data-outline';
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
@@ -33,7 +33,7 @@ export default function App() {
   
       <Tab.Screen name="Home" component={Home} />
       <Tab.Screen name="MQTT" component={Mqtt} />
-      <Tab.Screen name="Config" component={TankVolumeCalculator} /> 
+      <Tab.Screen name="Data" component={Data} /> 
     </Tab.Navigator>
     </NavigationContainer>
   );
