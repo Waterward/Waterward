@@ -4,6 +4,7 @@ import { collection, query, onSnapshot, deleteDoc, doc } from 'firebase/firestor
 import { useNavigation } from '@react-navigation/native';
 import withUser from '../withUser'; // Ensure this HOC is properly configured
 import { FIREBASE_FIRESTORE } from '../firebaseConfig'; // Adjust the path as necessary
+import Tank from './Tank';
 
 const Home = ({ user }) => {
   const [tanks, setTanks] = useState([]);
@@ -57,6 +58,7 @@ const Home = ({ user }) => {
 
   const renderTank = ({ item }) => (
     <TouchableOpacity onPress={openTank(item)} style={styles.card}>
+    {/* <TouchableOpacity  style={styles.card}> */}
       <Image resizeMode='contain' style={styles.image} source={{ uri: handleTankImage(item.type) }} />
       <Text style={styles.name}>{item.name}</Text>
       {/* <Text>Type: {item.type}</Text>
