@@ -56,7 +56,7 @@ const renderComponent = (title, tankId) => {
   }
 };
 
-const Tank = ({ user }) => {
+const Home = ({ user }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [tanks, setTanks] = useState([]);
@@ -236,4 +236,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Tank;
+export default Home;

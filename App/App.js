@@ -3,11 +3,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import Home from './screens/Home';
 import Mqtt from './screens/Mqtt';
 import Data from './screens/Data';
 import AddTank from './screens/AddTank';
-import MyTanks from './screens/MyTanks';
+import Home from './screens/Home';
 import withUser from './withUser';
 import { onAuthStateChanged } from 'firebase/auth';
 import { FIREBASE_AUTH } from './firebaseConfig';
@@ -20,7 +19,6 @@ const HomeWithUser = withUser(Home);
 const MqttWithUser = withUser(Mqtt);
 const DataWithUser = withUser(Data);
 const AddTankWithUser = withUser(AddTank);
-const MyTanksWithUser = withUser(MyTanks);
 
 const MainTabs = () => (
   <Tab.Navigator
@@ -51,7 +49,7 @@ const MainTabs = () => (
     <Tab.Screen name="MQTT" component={MqttWithUser} />
     <Tab.Screen name="Config" component={DataWithUser} />
     <Tab.Screen name="Add Tank" component={AddTankWithUser} />
-    <Tab.Screen name="My Tanks" component={MyTanksWithUser} />
+    {/* <Tab.Screen name="My Tanks" component={HomeWithUser} /> */}
   </Tab.Navigator>
 );
 
