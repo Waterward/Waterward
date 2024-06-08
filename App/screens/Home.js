@@ -56,7 +56,7 @@ const renderComponent = (title, tankId) => {
   }
 };
 
-const Home = () => {
+const Home = ({ user }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [tanks, setTanks] = useState([]);
@@ -66,17 +66,19 @@ const Home = () => {
   useEffect(() => {
     const q = query(collection(firestore, 'tanks'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const tankData = [];
+      tankData = [];
       querySnapshot.forEach((doc) => {
         tankData.push({ ...doc.data(), id: doc.id });
       });
+      console.log(user.uid)
+      tankData = tankData.filter(tank => tank.userId === user.uid);
       setTanks(tankData);
       if (tankData.length > 0 && !selectedTank) {
         setSelectedTank(tankData[0].id); // Select the first tank by default
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [user.uid]);
 
   useEffect(() => {
     const mqttClient = new Paho.Client(process.env.MQTT_BROKER,8884, 'clientId');

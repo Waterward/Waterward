@@ -20,9 +20,8 @@ const AddTank = ({ user }) => {
   const navigation = useNavigation();
 
   const handleAddTank = async () => {
-    const tankId = Math.floor(Math.random(10));
     const newTank = {
-      id: tankId,
+      uuid: uuidv4(),
       userId: user.uid,
       name,
       type,
