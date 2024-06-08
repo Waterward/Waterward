@@ -32,7 +32,7 @@ const MainTabs = () => (
           iconName = focused ? 'home' : 'home-outline';
         } else if (route.name === 'MQTT') {
           iconName = focused ? 'wifi' : 'wifi-outline';
-        } else if (route.name === 'Config') {
+        } else if (route.name === 'Analytics') {
           iconName = focused ? 'analytics' : 'analytics-outline';
         } else if (route.name === 'Add Tank') {
           iconName = focused ? 'add-circle' : 'add-circle-outline';
@@ -49,9 +49,8 @@ const MainTabs = () => (
   >
     <Tab.Screen name="Home" component={HomeWithUser} />
     <Tab.Screen name="MQTT" component={MqttWithUser} />
-    <Tab.Screen name="Config" component={DataWithUser} />
+    <Tab.Screen name="Analytics" component={DataWithUser} />
     <Tab.Screen name="Add Tank" component={AddTankWithUser} />
-    <Tab.Screen name="My Tanks" component={MyTanksWithUser} />
   </Tab.Navigator>
 );
 

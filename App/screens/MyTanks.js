@@ -70,7 +70,6 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
     padding: 20,
     marginBottom: 20,
     elevation: 2,
@@ -83,3 +82,82 @@ const styles = StyleSheet.create({
 });
 
 export default (MyTanks); // Ensure `withUser` HOC provides `user` prop correctly
+
+import React, { useEffect, useState } from 'react';
+import { Button,View, Text, TouchableOpacity, StyleSheet, FlatList, Alert } from 'react-native';
+import { collection, query, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { FIREBASE_FIRESTORE } from '../firebaseConfig';
+
+const MyTanks = ({ user, onSelectTank }) => {
+  const [tanks, setTanks] = useState([]);
+
+  useEffect(() => {
+    const q = query(collection(FIREBASE_FIRESTORE, 'tanks'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const tankData = [];
+      querySnapshot.forEach((doc) => {
+        tankData.push({ ...doc.data(), id: doc.id });
+      });
+      const userTanks = tankData.filter(tank => tank.userId === user.uid);
+      setTanks(userTanks);
+    });
+    return () => unsubscribe();
+  }, [user.uid]);
+
+  const handleDeleteTank = async (tankId) => {
+    console.log("Deleting tank with ID: ", tankId);
+    try {
+      const tankRef = doc(FIREBASE_FIRESTORE, 'tanks', tankId);
+      await deleteDoc(tankRef);
+      Alert.alert('Success', 'Tank deleted successfully');
+    } catch (error) {
+      console.error('Error deleting tank: ', error);
+      Alert.alert('Error', 'Failed to delete tank');
+    }
+  };
+
+  const renderTank = ({ item }) => (
+    <TouchableOpacity style={styles.card} onPress={() => onSelectTank(item.id)}>
+      <Text style={styles.name}>{item.name}</Text>
+      <Text>Type: {item.type}</Text>
+      <Text>Height: {item.height}</Text>
+      <Text>Width: {item.width}</Text>
+      <Text>Diameter: {item.diameter}</Text>
+      <Text>Length: {item.length}</Text>
+      <Text>Full Depth: {item.fullDepth}</Text>
+      <Button title="Delete" onPress={() => handleDeleteTank(item.id)} />
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={tanks}
+        renderItem={renderTank}
+        keyExtractor={item => item.id}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 10,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+  },
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+});
+
+export default (MyTanks);

@@ -4,6 +4,7 @@ import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/fire
 import { app } from '../firebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import AlertConfiguration from './AlertConfiguration'; // Ensure to import your AlertConfiguration component
+import 'react-native-get-random-values'
 import { v4 as uuidv4 } from 'uuid';
 
 const firestore = getFirestore(app);

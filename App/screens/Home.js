@@ -13,6 +13,23 @@ import Valve from './Valve';
 import Motor from './Motor';
 import AddTank from './AddTank';
 import Hub from './Hub';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, FlatList, TouchableOpacity, Image, Modal, Button } from 'react-native';
+import { getFirestore, collection, query, onSnapshot } from 'firebase/firestore';
+import { app } from '../firebaseConfig';
+import * as Paho from 'paho-mqtt';
+import WaterLevel from './WaterLevel';
+import Temperature from './Temperature'; 
+import PH from './PH';
+import TDS from './TDS';
+import Turbidity from './Turbidity';
+import WaterFlow from './WaterFlow';
+import Valve from './Valve';
+import Motor from './Motor';
+import AddTank from './AddTank';
+import Hub from './Hub';
+import MyTanks from './MyTanks';
+import { MQTT_BROKER, MQTT_USER, MQTT_PASSWORD } from '@env';
 
 const firestore = getFirestore(app);
 
@@ -56,10 +73,51 @@ const renderComponent = (title, tankId) => {
   }
 };
 
+const firestore = getFirestore(app);
+
+const data = [
+  { key: '1', title: 'Water Level', imageUri: 'https://senix.com/wp-content/uploads/liquid-level-sensing-150x150-2.jpg' },
+  { key: '2', title: 'Temperature', imageUri: 'https://static.vecteezy.com/system/resources/previews/000/583/654/non_2x/cold-weather-thermometer-icon-vector.jpg' },
+  { key: '3', title: 'PH', imageUri: 'https://static.thenounproject.com/png/3215400-200.png' },
+  { key: '4', title: 'TDS (Total Dissolved Solids)', imageUri: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT793CV9UmXrieExeS51hNoVaCZTyodZnnzbixV-sHZyg&s' },
+  { key: '5', title: 'Turbidity', imageUri: 'https://www.shutterstock.com/image-vector/turbidity-sensor-icon-vector-illustration-600nw-2409562981.jpg' },
+  { key: '6', title: 'Water Flow', imageUri: 'https://as2.ftcdn.net/v2/jpg/05/99/88/65/1000_F_599886547_4EkCK47sLeDT7c3Byrzk9aRLdnOWW1S2.jpg' },
+  { key: '7', title: 'Control Tank Valve', imageUri: 'https://i.pinimg.com/564x/3e/e8/8c/3ee88cdde71f6c4248663bc0ac4c105c.jpg' },
+  { key: '8', title: 'Control Tank Motor', imageUri: 'https://cdn-icons-png.freepik.com/512/3799/3799458.png' },
+  { key: '9', title: 'Add Tank', imageUri: 'https://static.thenounproject.com/png/1595245-200.png' },
+  { key: '10', title: 'Add WaterWard Hub', imageUri: 'https://cdn0.iconfinder.com/data/icons/smarthome-line/32/05-512.png' },
+];
+
+const renderComponent = (title, tankId, client) => {
+  switch (title) {
+    case 'Water Level':
+      return <WaterLevel tankId={tankId} client={client} />;
+    case 'Temperature':
+      return <Temperature tankId={tankId} client={client} />;
+    case 'PH':
+      return <PH tankId={tankId} client={client} />;
+    case 'TDS (Total Dissolved Solids)':
+      return <TDS tankId={tankId} client={client} />;
+    case 'Turbidity':
+      return <Turbidity tankId={tankId} client={client} />;
+    case 'Water Flow':
+      return <WaterFlow tankId={tankId} client={client} />;
+    case 'Control Tank Valve':
+      return <Valve tankId={tankId} client={client} />;
+    case 'Control Tank Motor':
+      return <Motor tankId={tankId} client={client} />;
+
+    default:
+      return <Text>No Component Found</Text>;
+  }
+};
+
 const Home = ({ user }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [tanks, setTanks] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [selectedTank, setSelectedTank] = useState(null);
   const [client, setClient] = useState(null);
 
@@ -75,6 +133,22 @@ const Home = ({ user }) => {
       setTanks(tankData);
       if (tankData.length > 0 && !selectedTank) {
         setSelectedTank(tankData[0].id); // Select the first tank by default
+    const mqttClient = new Paho.Client(MQTT_BROKER, 8884, 'client-id');
+
+    mqttClient.onConnectionLost = (responseObject) => {
+      console.error('Connection lost: ' + responseObject.errorMessage);
+    };
+
+    mqttClient.connect({
+      useSSL: true,
+      userName: MQTT_USER,
+      password: MQTT_PASSWORD,
+      onSuccess: () => {
+        console.log('Connected to MQTT broker');
+        setClient(mqttClient);
+      },
+      onFailure: (error) => {
+        console.error('Connection failed: ', error.errorMessage);
       }
     });
     return () => unsubscribe();
@@ -100,6 +174,16 @@ const Home = ({ user }) => {
   const openModal = (item) => {
     setSelectedItem(item);
     setModalVisible(true);
+    return () => {
+      if (client && client.isConnected()) {
+        client.disconnect();
+      }
+    };
+  }, []);
+
+  const openModal = (item) => {
+    setSelectedItem(item);
+    setModalVisible(true);
   };
 
   const closeModal = () => {
@@ -111,6 +195,34 @@ const Home = ({ user }) => {
     setSelectedTank(tankId);
     if (client && client.isConnected()) {
       const message = new Paho.Message(tankId);
+      message.destinationName = 'config/tankId';
+      client.send(message);
+    }
+  const handleTankSelection = (tankId) => {
+    setSelectedTank(tankId);
+    if (client && client.isConnected()) {
+      const message = new Paho.Message(tankId);
+      message.destinationName = 'config/tankId';
+      client.send(message);
+      client.subscribe(`tanks/${tankId}/#`, {
+        onSuccess: () => {
+          console.log(`Subscribed to tanks/${tankId}/# topic`);
+        },
+        onFailure: (error) => {
+          console.error('Subscription failed: ', error.errorMessage);
+        }
+      });
+    }
+  };
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity style={styles.itemContainer} onPress={() => openModal(item)}>
+      <Text>{item.title}</Text>
+      <Image resizeMode='contain' style={styles.image} source={{ uri: item.imageUri }} />
+  const handleBackToTankSelection = () => {
+    setSelectedTank(null);
+    if (client && client.isConnected()) {
+      const message = new Paho.Message('reset');
       message.destinationName = 'config/tankId';
       client.send(message);
     }
@@ -163,6 +275,35 @@ const Home = ({ user }) => {
           </View>
         </Modal>
       )}
+      {!selectedTank ? (
+        <MyTanks user={user} onSelectTank={handleTankSelection} />
+      ) : (
+        <>
+          <Button title="Back to Tank Selection" onPress={handleBackToTankSelection} />
+          <FlatList
+            scrollEnabled={true}
+            data={data}
+            renderItem={renderItem}
+            keyExtractor={item => item.key}
+            numColumns={2}
+          />
+          {selectedItem && (
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={closeModal}
+            >
+              <View style={styles.modalContainer}>
+                <View style={styles.modalView}>
+                  {renderComponent(selectedItem.title, selectedTank, client)}
+                  <Button title="Close" onPress={closeModal} />
+                </View>
+              </View>
+            </Modal>
+          )}
+        </>
+      )}
     </View>
   );
 };
@@ -177,6 +318,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 10,
     justifyContent: 'center',
+  itemContainer: {
+    padding: 10,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'black',
+    flex: 1,
+    margin: 8,
+    alignItems: 'center',
   },
   tankButton: {
     padding: 10,
