@@ -201,11 +201,11 @@ float readLevel() {
   float distance = ultrasonic.read();
 
   // Convert distance to water level (adjust as needed)
-  int waterLevel = map(distance, 0, 20, 100, 0);
+  // int waterLevel = map(distance, 0, 200, 100, 0);
 
-  mqtt_publish("level", String(waterLevel));
+  mqtt_publish("level", String(distance));
 
-  return waterLevel;
+  return distance;
 }
 
 // Turbidity Sensor
