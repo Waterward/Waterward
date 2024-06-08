@@ -2,3 +2,5 @@
 WaterwardApp/android/app/debug.keystore
 
 Arduino/WaterWard/SECRET_VARS.h
+
+Arduino/WaterWard_Hub/SECRET_VARS.h
