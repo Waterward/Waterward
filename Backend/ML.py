@@ -15,7 +15,7 @@ load_dotenv()
 
 # Flag to switch between InfluxDB and CSV
 
-url = os.getenv('INFLUXDB_URL')
+    url = os.getenv('INFLUXDB_URL')
     token = os.getenv('INFLUXDB_TOKEN')
     org = os.getenv('INFLUXDB_ORG')
     bucket = os.getenv('INFLUXDB_BUCKET')
