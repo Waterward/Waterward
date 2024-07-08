@@ -14,30 +14,8 @@ import json
 load_dotenv()
 
 # Flag to switch between InfluxDB and CSV
-USE_CSV = True  # Set this to False when your sensors are set up
 
-if USE_CSV:
-    # Read data from CSV for testing
-    csv_file_path = '/home/mrt/my_learning/Waterward/Backend/Fake_Water_Consumption_Data_Wider_Range.csv'  # Update this with the actual path to your CSV file
-    df = pd.read_csv(csv_file_path)
-    
-    # Print the columns to inspect them
-    print("CSV Columns:", df.columns)
-    
-    # Combine 'date' and 'time' columns into a single 'dateTime' column
-    df['dateTime'] = pd.to_datetime(df['date'] + ' ' + df['time'])
-    
-    # Set 'dateTime' as the index
-    df.set_index('dateTime', inplace=True)
-    
-    # Drop the original 'date' and 'time' columns
-    df.drop(columns=['date', 'time'], inplace=True)
-    
-    # Rename the 'liters' column to 'value' to match the InfluxDB data format
-    df.rename(columns={'liters': 'value'}, inplace=True)
-else:
-    # InfluxDB credentials
-    url = os.getenv('INFLUXDB_URL')
+url = os.getenv('INFLUXDB_URL')
     token = os.getenv('INFLUXDB_TOKEN')
     org = os.getenv('INFLUXDB_ORG')
     bucket = os.getenv('INFLUXDB_BUCKET')
